@@ -7,8 +7,15 @@ import { describeError } from './domain/errors';
 import { fingerprintFile } from './domain/fingerprint';
 import { matchesSource, nextSegmentIndex, orderSegments } from './domain/resume';
 import { segmentBounds } from './domain/time';
-import { DEFAULT_SETTINGS, type PersistedJob, type RuntimeJob, type TranscriptSegment } from './domain/types';
-import { CONTEXT_SECONDS } from './domain/types';
+import {
+  CONTEXT_SECONDS,
+  DEFAULT_SETTINGS,
+  MODEL_ID,
+  MODEL_REVISION,
+  type PersistedJob,
+  type RuntimeJob,
+  type TranscriptSegment,
+} from './domain/types';
 import { textInsideWindow, type TranscriptionResult } from './media/audio';
 import { buildTxt, downloadBlob, exportData, sanitizeFileName } from './export/transcript';
 import { clearAllData, commitSegment, deleteJob, getSegments, listJobs, saveEditedSegment, saveJob } from './storage/database';
@@ -157,11 +164,26 @@ export function App() {
       setNotice('Ya hay una transcripción activa. Paúsala o espera a que termine antes de iniciar otra.');
       return;
     }
-    const initial = jobsRef.current.find((job) => job.id === jobId);
-    if (!initial?.file) {
+    const storedInitial = jobsRef.current.find((job) => job.id === jobId);
+    if (!storedInitial?.file) {
       setNotice('Vuelve a seleccionar el archivo original antes de reanudar.');
       return;
     }
+    const sourceFile = storedInitial.file;
+    const initial: RuntimeJob = {
+      ...storedInitial,
+      file: sourceFile,
+      settings: {
+        ...storedInitial.settings,
+        modelId: MODEL_ID,
+        modelRevision: MODEL_REVISION,
+        contextSeconds: storedInitial.settings.contextSeconds ?? DEFAULT_SETTINGS.contextSeconds,
+        normalizeAudio: storedInitial.settings.normalizeAudio ?? DEFAULT_SETTINGS.normalizeAudio,
+        wordTimestamps: true,
+      },
+      updatedAt: Date.now(),
+    };
+    updateJob(jobId, () => initial);
     running.current = true;
     const control: ControlState = { pause: false, cancel: false };
     controls.current.set(jobId, control);
@@ -173,9 +195,10 @@ export function App() {
     activeClient.current = { jobId, client };
 
     try {
+      await saveJob(persisted(initial));
       await setStatus(jobId, 'cargando-modelo');
       const { IncrementalMediaDecoder } = await import('./media/decoder');
-      const decoder = new IncrementalMediaDecoder(initial.file);
+      const decoder = new IncrementalMediaDecoder(sourceFile);
       const metadata = await decoder.inspect();
       const totalSegments = Math.ceil(metadata.duration / initial.settings.segmentSeconds);
       updateJob(jobId, (job) => ({ ...job, duration: metadata.duration, totalSegments }));

@@ -7,7 +7,7 @@ Aplicación web estática para transcribir audio y video en español dentro del 
 - Cola de varios archivos MP4, MOV, MKV, MP3, WAV y M4A. La extensión no garantiza compatibilidad: antes de aceptar el trabajo se comprueba que la pista real sea decodificable por Mediabunny/WebCodecs en el navegador utilizado.
 - Ventanas lógicas de 25 segundos con 2,5 segundos de contexto a cada lado: Whisper devuelve tiempos por palabra y la app conserva únicamente las palabras cuyo centro pertenece a la ventana, evitando cortes y duplicados en los límites.
 - Mezcla a mono resistente a cancelación de fase, eliminación de componente continua, normalización moderada y remuestreo a 16 kHz mediante Web Audio (con alternativa lineal), sin decodificar la grabación completa en RAM.
-- Transcripción local en un Web Worker con `onnx-community/whisper-small` fijado a la revisión `461d552a09349d5d0d0779b40dd79800eaa3e35a`, español y tarea de transcripción (sin resumen ni traducción).
+- Transcripción local en un Web Worker con `onnx-community/whisper-small_timestamped` fijado a la revisión `65caa70f294b46e1c33ff820aae6b16d048ab818`. Esta exportación conserva las atenciones cruzadas necesarias para calcular tiempos por palabra; usa español y la tarea de transcripción (sin resumen ni traducción).
 - Preferencia por WebGPU y reintento automático con WASM/CPU si la carga por GPU falla.
 - Confirmación atómica de cada fragmento en IndexedDB, con tiempos absolutos, identidad de fuente, versión de modelo y ajustes.
 - Pausa en el límite del fragmento, cancelación, reintento y reanudación desde el primer hueco guardado.
@@ -41,7 +41,7 @@ Un fragmento solo cuenta como completado cuando el texto y el estado del trabajo
 
 ## Privacidad y red
 
-La app no incluye analítica, telemetría, cuentas ni endpoints de aplicación. Transformers.js descarga el modelo desde Hugging Face; Vercel entrega los archivos estáticos. El modelo `onnx-community/whisper-small` requiere aproximadamente 250 MB con WASM/q8 o 590 MB con el codificador fp32 y decodificador q4 de WebGPU (más archivos pequeños de configuración), y queda sujeto a la caché del navegador.
+La app no incluye analítica, telemetría, cuentas ni endpoints de aplicación. Transformers.js descarga el modelo desde Hugging Face; Vercel entrega los archivos estáticos. El modelo `onnx-community/whisper-small_timestamped` requiere aproximadamente 250 MB con WASM/q8 o 590 MB con el codificador fp32 y decodificador q4 de WebGPU (más archivos pequeños de configuración), y queda sujeto a la caché del navegador.
 
 Para auditar la red en Chrome o Edge:
 

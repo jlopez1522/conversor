@@ -1,5 +1,5 @@
-export const MODEL_ID = 'onnx-community/whisper-small' as const;
-export const MODEL_REVISION = '461d552a09349d5d0d0779b40dd79800eaa3e35a' as const;
+export const MODEL_ID = 'onnx-community/whisper-small_timestamped' as const;
+export const MODEL_REVISION = '65caa70f294b46e1c33ff820aae6b16d048ab818' as const;
 export const SEGMENT_SECONDS = 25;
 export const CONTEXT_SECONDS = 2.5;
 export const TARGET_SAMPLE_RATE = 16_000;
